@@ -42,8 +42,8 @@ namespace JMS.Tools.SolutionUpdater
                 // Create the factory
                 if (factory == null)
                 {
-                    // Test supported items
-                    var match = ProjectSection.Pattern.Match( line );
+                    // Project
+                    var match = ProjectSection.StartPattern.Match( line );
                     if (match.Success)
                     {
                         // Project section
@@ -51,8 +51,18 @@ namespace JMS.Tools.SolutionUpdater
                     }
                     else
                     {
-                        // Fallback
-                        factory = new PassThroughLine();
+                        // Settings
+                        match = GlobalSection.StartPattern.Match( line );
+                        if (match.Success)
+                        {
+                            // Use it 
+                            factory = new GlobalSection( match, m_path );
+                        }
+                        else
+                        {
+                            // Fallback
+                            factory = new PassThroughLine();
+                        }
                     }
 
                     // Remember

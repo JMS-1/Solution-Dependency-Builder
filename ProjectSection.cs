@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -15,14 +16,29 @@ namespace JMS.Tools.SolutionUpdater
     public class ProjectSection : SolutionFileSection
     {
         /// <summary>
+        /// Alle bekannten Arten von Projekten.
+        /// </summary>
+        private static readonly Dictionary<Guid, Func<FileInfo, ProjectTypeHandler>> _SupportedProjectTypes =
+            new Dictionary<Guid, Func<FileInfo, ProjectTypeHandler>>
+            {
+                { new Guid( "{fae04ec0-301f-11d3-bf4b-00c04f79efbc}" ), path => new CSharpProject(path) },
+                { new Guid( "{8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942}" ), path => new CPlusPlusProject(path) },
+            };
+
+        /// <summary>
         /// Das Vergleichsmuster zum Erkennen eines Projektabschnitts.
         /// </summary>
-        public static readonly Regex Pattern = new Regex( "^[\\s]*Project\\(\"(?<id>\\{[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\\})\"\\)[\\s]*=[\\s]*\"[\\s]*(?<name>[^\"]*)[\\s]*\"[\\s]*,[\\s]*\"(?<path>[^\"]*)\"[\\s]*,[\\s]*\"(?<type>\\{[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\\})\"[\\s]*$", RegexOptions.Compiled );
+        public static readonly Regex StartPattern = new Regex( "^[\\s]*Project\\(\"(?<type>\\{[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\\})\"\\)[\\s]*=[\\s]*\"[\\s]*(?<name>[^\"]*)[\\s]*\"[\\s]*,[\\s]*\"(?<path>[^\"]*)\"[\\s]*,[\\s]*\"(?<id>\\{[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\\})\"[\\s]*$", RegexOptions.Compiled );
+
+        /// <summary>
+        /// Das Vergleichsmuster zum Erkennen des Endes eines Projekabschnitts.
+        /// </summary>
+        private static readonly Regex EndPattern = new Regex( "^[\\s]*EndProject[\\s]*$", RegexOptions.Compiled );
 
         /// <summary>
         /// Alle Zeilen dieses Bereichs.
         /// </summary>
-        private readonly List<string> m_lines = new List<string>();
+        private readonly List<SolutionFileSection> m_sections = new List<SolutionFileSection>();
 
         /// <summary>
         /// Die eindeutige Kennung des Projektes.
@@ -45,6 +61,16 @@ namespace JMS.Tools.SolutionUpdater
         public string ProjectName { get; private set; }
 
         /// <summary>
+        /// Die aktuelle Auswertung.
+        /// </summary>
+        private SolutionFileSection m_factory;
+
+        /// <summary>
+        /// Die zugehörige Projektdatei.
+        /// </summary>
+        private readonly ProjectTypeHandler m_projectFile;
+
+        /// <summary>
         /// Erstellt einen neuen Projektbereich.
         /// </summary>
         /// <param name="header">Die bereits analysierte Kopfzeile.</param>
@@ -56,6 +82,14 @@ namespace JMS.Tools.SolutionUpdater
             ProjectTypeIdentifier = new Guid( header.Groups["type"].Value );
             UniqueIdentifier = new Guid( header.Groups["id"].Value );
             ProjectName = header.Groups["name"].Value;
+
+            // Read the handler factory
+            Func<FileInfo, ProjectTypeHandler> factory;
+            if (!_SupportedProjectTypes.TryGetValue( ProjectTypeIdentifier, out factory ))
+                throw new NotSupportedException( string.Format( "Unsupported Project Type {0}", header.Groups["type"].Value ) );
+
+            // Time to load project file
+            m_projectFile = factory( ProjectPath );
         }
 
         /// <summary>
@@ -65,11 +99,35 @@ namespace JMS.Tools.SolutionUpdater
         /// <returns>Gesetzt, wenn weitere Zeilen aufgenommen werden können.</returns>
         public override bool Extend( string line )
         {
-            // Always remember
-            m_lines.Add( line );
+            // Create factory
+            if (m_factory == null)
+            {
+                // Check mode
+                var match = ProjectDependenciesSection.StartPattern.Match( line );
+                if (match.Success)
+                {
+                    // Create new
+                    m_factory = new ProjectDependenciesSection( match );
+                }
+                else
+                {
+                    // Fallback
+                    m_factory = new PassThroughLine();
+                }
 
-            // We are fed
-            return !"EndProject".Equals( line );
+                // Remember
+                m_sections.Add( m_factory );
+            }
+
+            // Eat up
+            if (m_factory.Extend( line ))
+                return true;
+
+            // Reset
+            m_factory = null;
+
+            // Check for full end - actually a bit of misuse of our factory pattern but who cares
+            return !EndPattern.IsMatch( line );
         }
 
         /// <summary>
@@ -79,7 +137,7 @@ namespace JMS.Tools.SolutionUpdater
         public override IEnumerable<string> Reconstruct()
         {
             // Report
-            return m_lines;
+            return m_sections.SelectMany( section => section.Reconstruct() );
         }
     }
 }

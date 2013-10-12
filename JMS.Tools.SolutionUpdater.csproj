@@ -47,9 +47,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CPlusPlusProject.cs" />
+    <Compile Include="CSharpProject.cs" />
+    <Compile Include="ProjectDependenciesSection.cs" />
+    <Compile Include="GlobalSection.cs" />
     <Compile Include="PassThroughLine.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProjectSection.cs" />
+    <Compile Include="ProjectTypeHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SolutionFile.cs" />
     <Compile Include="SolutionFileSection.cs" />
