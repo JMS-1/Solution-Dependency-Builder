@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -9,6 +8,11 @@ namespace JMS.Tools.SolutionUpdater
     /// </summary>
     public class CSharpProject : ProjectTypeHandler
     {
+        /// <summary>
+        /// Der XPath zum Namen der Assembly.
+        /// </summary>
+        protected override string TargetNamePath { get { return "msbuild:Project/msbuild:PropertyGroup[not(@Condition)]/msbuild:AssemblyName"; } }
+
         /// <summary>
         /// Initialisiert eine Verwaltung.
         /// </summary>

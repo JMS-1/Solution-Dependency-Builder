@@ -1,4 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Xml;
 
 
@@ -12,12 +16,32 @@ namespace JMS.Tools.SolutionUpdater
         /// <summary>
         /// Die Rohdaten.
         /// </summary>
-        private readonly XmlDocument m_raw = new XmlDocument();
+        protected readonly XmlDocument Document = new XmlDocument();
+
+        /// <summary>
+        /// Der zu verwendende Namensraum.
+        /// </summary>
+        protected readonly XmlNamespaceManager Namespaces;
 
         /// <summary>
         /// Der volle Pfad zur Projektdatei.
         /// </summary>
-        private readonly FileInfo m_path;
+        public FileInfo FilePath { get; private set; }
+
+        /// <summary>
+        /// Der XPath zum Namen der Assembly.
+        /// </summary>
+        protected abstract string TargetNamePath { get; }
+
+        /// <summary>
+        /// Der Name der Zieldatei.
+        /// </summary>
+        public string AssemblyName { get; private set; }
+
+        /// <summary>
+        /// Die Liste aller Abhängigkeiten.
+        /// </summary>
+        public HashSet<Guid> Dependencies { get; private set; }
 
         /// <summary>
         /// Initialisiert eine Verwaltung.
@@ -26,10 +50,61 @@ namespace JMS.Tools.SolutionUpdater
         protected ProjectTypeHandler( FileInfo path )
         {
             // Remember
-            m_path = path;
+            FilePath = path;
 
             // Load
-            m_raw.Load( m_path.FullName );
+            Document.Load( FilePath.FullName );
+
+            // Attach to the table
+            Namespaces = new XmlNamespaceManager( Document.NameTable );
+
+            // Create the default name space
+            Namespaces.AddNamespace( "msbuild", "http://schemas.microsoft.com/developer/msbuild/2003" );
+
+            // Read the name of the target
+            var assemblyName = Document.SelectSingleNode( TargetNamePath, Namespaces );
+            if (assemblyName != null)
+                AssemblyName = assemblyName.InnerText;
+
+            // Validate
+            if (string.IsNullOrEmpty( AssemblyName ))
+                AssemblyName = Path.GetFileNameWithoutExtension( path.FullName );
+        }
+
+        /// <summary>
+        /// Ermittelt alle Referenzen.
+        /// </summary>
+        protected virtual IEnumerable<string> References
+        {
+            get
+            {
+                // Process
+                return
+                    Document
+                        .SelectNodes( "msbuild:Project/msbuild:ItemGroup/msbuild:Reference[@Include]", Namespaces )
+                        .Cast<XmlElement>()
+                        .Select( element => new AssemblyName( element.GetAttribute( "Include" ) ) )
+                        .Select( name => name.Name );
+            }
+        }
+
+        /// <summary>
+        /// Löst alle Referenzen auf.
+        /// </summary>
+        /// <param name="projects">Alle bekannten Projekte.</param>
+        public void Resolve( Dictionary<string, ProjectSection> projects )
+        {
+            // Create new
+            Dependencies = new HashSet<Guid>();
+
+            // Load references
+            foreach (var reference in References)
+            {
+                // Look it up
+                ProjectSection project;
+                if (projects.TryGetValue( reference, out project ))
+                    Dependencies.Add( project.UniqueIdentifier );
+            }
         }
     }
 }

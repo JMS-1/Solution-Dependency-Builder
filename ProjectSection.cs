@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -68,7 +65,7 @@ namespace JMS.Tools.SolutionUpdater
         /// <summary>
         /// Die zugehörige Projektdatei.
         /// </summary>
-        private readonly ProjectTypeHandler m_projectFile;
+        public ProjectTypeHandler ProjectFile { get; private set; }
 
         /// <summary>
         /// Erstellt einen neuen Projektbereich.
@@ -89,7 +86,7 @@ namespace JMS.Tools.SolutionUpdater
                 throw new NotSupportedException( string.Format( "Unsupported Project Type {0}", header.Groups["type"].Value ) );
 
             // Time to load project file
-            m_projectFile = factory( ProjectPath );
+            ProjectFile = factory( ProjectPath );
         }
 
         /// <summary>
@@ -138,6 +135,46 @@ namespace JMS.Tools.SolutionUpdater
         {
             // Report
             return m_sections.SelectMany( section => section.Reconstruct() );
+        }
+
+        /// <summary>
+        /// Löst alle Referenzen auf.
+        /// </summary>
+        /// <param name="projects">Alle bekannten Projekte.</param>
+        /// <param name="projectLookup">Projekte zum Nachschlagen nach der eindeutigen Kennung.</param>
+        public void Resolve( Dictionary<string, ProjectSection> projects, Dictionary<Guid, ProjectSection> projectLookup )
+        {
+            // Forward
+            ProjectFile.Resolve( projects );
+
+            // Attach to existing dependencies
+            var dependencySection = m_sections.OfType<ProjectDependenciesSection>().SingleOrDefault();
+            var dependencies = (dependencySection != null) ? dependencySection.Dependencies : new HashSet<Guid>();
+
+            // Add
+            foreach (var newDependency in ProjectFile.Dependencies)
+                if (!dependencies.Contains( newDependency ))
+                {
+                    // Report
+                    if (Program.Logging)
+                        Console.WriteLine( "+{0}: {1}", ProjectFile.FilePath.FullName, projectLookup[newDependency].ProjectName );
+                }
+
+            // Remove
+            foreach (var oldDependency in dependencies)
+                if (!ProjectFile.Dependencies.Contains( oldDependency ))
+                {
+                    // Report
+                    if (Program.Logging)
+                    {
+                        // See if we know the project
+                        ProjectSection project;
+                        projectLookup.TryGetValue( oldDependency, out project );
+
+                        // Can now report
+                        Console.WriteLine( "-{0}: {1}", ProjectFile.FilePath.FullName, (project == null) ? oldDependency : (object) project.ProjectName );
+                    }
+                }
         }
     }
 }

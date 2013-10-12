@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -37,7 +33,7 @@ namespace JMS.Tools.SolutionUpdater
         /// <summary>
         /// Die Liste der Abhängigkeiten.
         /// </summary>
-        private readonly HashSet<Guid> m_dependencies = new HashSet<Guid>();
+        public HashSet<Guid> Dependencies { get; private set; }
 
         /// <summary>
         /// Erstellt eine neue Abhängigkeitsliste.
@@ -45,6 +41,8 @@ namespace JMS.Tools.SolutionUpdater
         /// <param name="header">Die bereits analysierte Kopfzeile.</param>
         public ProjectDependenciesSection( Match header )
         {
+            // Finish
+            Dependencies = new HashSet<Guid>();
         }
 
         /// <summary>
@@ -68,7 +66,7 @@ namespace JMS.Tools.SolutionUpdater
                     throw new NotSupportedException( string.Format( "Bad Dependency: {0}", line.Trim() ) );
 
                 // Remember
-                if (!m_dependencies.Add( id1 ))
+                if (!Dependencies.Add( id1 ))
                     throw new NotSupportedException( string.Format( "Duplicate Dependency: {0}", line.Trim() ) );
             }
 

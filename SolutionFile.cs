@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -73,6 +70,14 @@ namespace JMS.Tools.SolutionUpdater
                 if (!factory.Extend( line ))
                     factory = null;
             }
+
+            // All project we know
+            var projectsByIdentifier = m_sections.OfType<ProjectSection>().ToDictionary( project => project.UniqueIdentifier );
+            var projectsByTarget = projectsByIdentifier.Values.ToDictionary( project => project.ProjectFile.AssemblyName, StringComparer.InvariantCultureIgnoreCase );
+
+            // Resolve references
+            foreach (var project in projectsByTarget.Values)
+                project.Resolve( projectsByTarget, projectsByIdentifier );
         }
 
         /// <summary>
