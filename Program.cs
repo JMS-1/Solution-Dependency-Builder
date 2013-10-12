@@ -13,7 +13,7 @@ namespace JMS.Tools.SolutionUpdater
         /// <summary>
         /// Gesetzt, wenn die Protokollierung aktiviert ist.
         /// </summary>
-        private static bool _Logging;
+        public static bool Logging { get; private set; }
 
         /// <summary>
         /// Startet die Anwendung.
@@ -25,7 +25,7 @@ namespace JMS.Tools.SolutionUpdater
             var map = new HashSet<string>( args, StringComparer.InvariantCultureIgnoreCase );
 
             // Check flags
-            _Logging = map.Contains( "/log" );
+            Logging = map.Contains( "/log" );
 
             // Process files
             foreach (var path in map.Where( arg => arg.StartsWith( "/solution=", StringComparison.InvariantCultureIgnoreCase ) ).Select( arg => arg.Substring( 10 ) ))
@@ -38,7 +38,8 @@ namespace JMS.Tools.SolutionUpdater
         /// <param name="path">Der volle Pfad zur Solution.</param>
         private static void Process( string path )
         {
-            Console.WriteLine( path );
+            // Load the solution file
+            var solution = new SolutionFile( path );
         }
     }
 }
