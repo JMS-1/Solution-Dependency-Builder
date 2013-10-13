@@ -38,8 +38,16 @@ namespace JMS.Tools.SolutionUpdater
         /// <param name="path">Der volle Pfad zur Solution.</param>
         private static void Process( string path )
         {
+            // Report
+            if (Logging)
+                Console.WriteLine( "Processing {0}", path );
+
             // Load the solution file
             var solution = new SolutionFile( path );
+
+            // Report
+            if (Logging)
+                Console.WriteLine();
         }
     }
 }

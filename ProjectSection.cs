@@ -20,6 +20,7 @@ namespace JMS.Tools.SolutionUpdater
             {
                 { new Guid( "{fae04ec0-301f-11d3-bf4b-00c04f79efbc}" ), path => new CSharpProject(path) },
                 { new Guid( "{8bc9ceb8-8b4a-11d0-8d11-00a0c91bc942}" ), path => new CPlusPlusProject(path) },
+                { new Guid( "{2150e333-8fdc-42a3-9474-1a3956d46de8}" ), path => new SolutionOnlyProject(path) },
             };
 
         /// <summary>
@@ -157,7 +158,7 @@ namespace JMS.Tools.SolutionUpdater
                 {
                     // Report
                     if (Program.Logging)
-                        Console.WriteLine( "+{0}: {1}", ProjectFile.FilePath.FullName, projectLookup[newDependency].ProjectName );
+                        Console.WriteLine( "\t+{0}: {1}", ProjectFile.FilePath.FullName, projectLookup[newDependency].ProjectName );
                 }
 
             // Remove
@@ -172,7 +173,7 @@ namespace JMS.Tools.SolutionUpdater
                         projectLookup.TryGetValue( oldDependency, out project );
 
                         // Can now report
-                        Console.WriteLine( "-{0}: {1}", ProjectFile.FilePath.FullName, (project == null) ? oldDependency : (object) project.ProjectName );
+                        Console.WriteLine( "\t-{0}: {1}", ProjectFile.FilePath.FullName, (project == null) ? oldDependency : (object) project.ProjectName );
                     }
                 }
         }

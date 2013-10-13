@@ -47,19 +47,29 @@ namespace JMS.Tools.SolutionUpdater
         /// Initialisiert eine Verwaltung.
         /// </summary>
         /// <param name="path">Der volle Pfad zur Projektdatei.</param>
-        protected ProjectTypeHandler( FileInfo path )
+        protected ProjectTypeHandler( FileInfo path = null )
         {
             // Remember
             FilePath = path;
-
-            // Load
-            Document.Load( FilePath.FullName );
 
             // Attach to the table
             Namespaces = new XmlNamespaceManager( Document.NameTable );
 
             // Create the default name space
             Namespaces.AddNamespace( "msbuild", "http://schemas.microsoft.com/developer/msbuild/2003" );
+
+            // None
+            if (path == null)
+            {
+                // Fake name
+                AssemblyName = Guid.NewGuid().ToString( "N" ).ToUpper();
+
+                // Done
+                return;
+            }
+
+            // Load
+            Document.Load( FilePath.FullName );
 
             // Read the name of the target
             var assemblyName = Document.SelectSingleNode( TargetNamePath, Namespaces );
