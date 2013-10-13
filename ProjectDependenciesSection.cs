@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 
@@ -46,6 +47,37 @@ namespace JMS.Tools.SolutionUpdater
         }
 
         /// <summary>
+        /// Erstellt eine neue Anhängigkeitsliste.
+        /// </summary>
+        public ProjectDependenciesSection()
+            : this( null )
+        {
+            // Initialize
+            m_lines.Add( "\tProjectSection(ProjectDependencies) = postProject" );
+            m_lines.Add( "\tEndProjectSection" );
+        }
+
+        /// <summary>
+        /// Aktualisiert die Abhängigkeiten.
+        /// </summary>
+        /// <param name="newDependencies">Die neue Liste der Abhängigkeiten.</param>
+        public void UpdateDependencies( IEnumerable<Guid> newDependencies )
+        {
+            // Reset map
+            Dependencies.Clear();
+
+            // Reset text representation
+            m_lines.RemoveAll( DependencyPattern.IsMatch );
+
+            // Add new
+            Dependencies.UnionWith( newDependencies );
+
+            // Create lines
+            foreach (var dependency in Dependencies)
+                m_lines.Insert( 1, string.Format( "\t\t{0} = {0}", dependency.ToString( "B" ).ToUpper() ) );
+        }
+
+        /// <summary>
         /// Ergänzt eine weitere Zeile.
         /// </summary>
         /// <param name="line">Die gewünschte Zeile.</param>
@@ -81,7 +113,10 @@ namespace JMS.Tools.SolutionUpdater
         public override IEnumerable<string> Reconstruct()
         {
             // Report
-            return m_lines;
+            if (m_lines.Count < 3)
+                return Enumerable.Empty<string>();
+            else
+                return m_lines;
         }
     }
 }

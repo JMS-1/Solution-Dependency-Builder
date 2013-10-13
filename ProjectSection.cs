@@ -150,23 +150,22 @@ namespace JMS.Tools.SolutionUpdater
 
             // Attach to existing dependencies
             var dependencySection = m_sections.OfType<ProjectDependenciesSection>().SingleOrDefault();
-            var dependencies = (dependencySection != null) ? dependencySection.Dependencies : new HashSet<Guid>();
 
-            // Add
-            foreach (var newDependency in ProjectFile.Dependencies)
-                if (!dependencies.Contains( newDependency ))
-                {
-                    // Report
-                    if (Program.Logging)
+            // Create new
+            if (dependencySection == null)
+                m_sections.Insert( 1, dependencySection = new ProjectDependenciesSection() );
+
+            // Report
+            if (Program.Logging)
+            {
+                // Add
+                foreach (var newDependency in ProjectFile.Dependencies)
+                    if (!dependencySection.Dependencies.Contains( newDependency ))
                         Console.WriteLine( "\t+{0}: {1}", ProjectFile.FilePath.FullName, projectLookup[newDependency].ProjectName );
-                }
 
-            // Remove
-            foreach (var oldDependency in dependencies)
-                if (!ProjectFile.Dependencies.Contains( oldDependency ))
-                {
-                    // Report
-                    if (Program.Logging)
+                // Remove
+                foreach (var oldDependency in dependencySection.Dependencies)
+                    if (!ProjectFile.Dependencies.Contains( oldDependency ))
                     {
                         // See if we know the project
                         ProjectSection project;
@@ -175,7 +174,10 @@ namespace JMS.Tools.SolutionUpdater
                         // Can now report
                         Console.WriteLine( "\t-{0}: {1}", ProjectFile.FilePath.FullName, (project == null) ? oldDependency : (object) project.ProjectName );
                     }
-                }
+            }
+
+            // Process
+            dependencySection.UpdateDependencies( ProjectFile.Dependencies );
         }
     }
 }

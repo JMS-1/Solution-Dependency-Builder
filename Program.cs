@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -16,6 +18,11 @@ namespace JMS.Tools.SolutionUpdater
         public static bool Logging { get; private set; }
 
         /// <summary>
+        /// Gesetzt, wen ndie aktualisierte Datei geschrieben werden soll.
+        /// </summary>
+        public static bool Update { get; private set; }
+
+        /// <summary>
         /// Startet die Anwendung.
         /// </summary>
         /// <param name="args">Die Liste der Befehlszeilenparameter.</param>
@@ -25,6 +32,7 @@ namespace JMS.Tools.SolutionUpdater
             var map = new HashSet<string>( args, StringComparer.InvariantCultureIgnoreCase );
 
             // Check flags
+            Update = map.Contains( "/write" );
             Logging = map.Contains( "/log" );
 
             // Process files
@@ -44,6 +52,20 @@ namespace JMS.Tools.SolutionUpdater
 
             // Load the solution file
             var solution = new SolutionFile( path );
+
+            // Skip
+            if (Update)
+            {
+                // Create the new file name
+                var newPath = Path.Combine( Path.GetDirectoryName( path ), Path.GetFileNameWithoutExtension( path ) + " (Build)" + Path.GetExtension( path ) );
+
+                // Report
+                if (Logging)
+                    Console.WriteLine( "Creating updated Solution in {0}", newPath );
+
+                // Store
+                File.WriteAllLines( newPath, solution.Reconstruct(), Encoding.UTF8 );
+            }
 
             // Report
             if (Logging)
