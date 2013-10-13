@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SetupProject.cs" />
     <Compile Include="SolutionOnlyProject.cs" />
     <Compile Include="CPlusPlusProject.cs" />
     <Compile Include="CSharpProject.cs" />
