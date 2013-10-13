@@ -41,7 +41,7 @@ namespace JMS.Tools.SolutionUpdater
                         .Where( list => !string.IsNullOrWhiteSpace( list ) )
                         .SelectMany( list => list.Trim().Split( ';' ) )
                         .Where( name => !string.IsNullOrWhiteSpace( name ) )
-                        .Select( name => Path.GetFileNameWithoutExtension( name ) )
+                        .Select( name => Path.GetFileNameWithoutExtension( name.Trim() ) )
                         .Concat( base.References );
             }
         }
