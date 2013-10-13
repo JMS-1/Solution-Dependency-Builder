@@ -1,4 +1,7 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Xml;
 
 
 namespace JMS.Tools.SolutionUpdater
@@ -20,6 +23,27 @@ namespace JMS.Tools.SolutionUpdater
         public CPlusPlusProject( FileInfo path )
             : base( path )
         {
+        }
+
+        /// <summary>
+        /// Ermittelt alle Abhängigkeiten.
+        /// </summary>
+        protected override IEnumerable<string> References
+        {
+            get
+            {
+                // Request from list of additional dependencies - may be LIB only
+                return
+                    Document
+                        .SelectNodes( "//msbuild:Link/msbuild:AdditionalDependencies", Namespaces )
+                        .Cast<XmlElement>()
+                        .Select( node => node.InnerText )
+                        .Where( list => !string.IsNullOrWhiteSpace( list ) )
+                        .SelectMany( list => list.Trim().Split( ';' ) )
+                        .Where( name => !string.IsNullOrWhiteSpace( name ) )
+                        .Select( name => Path.GetFileNameWithoutExtension( name ) )
+                        .Concat( base.References );
+            }
         }
     }
 }
