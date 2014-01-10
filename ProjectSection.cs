@@ -140,6 +140,30 @@ namespace JMS.Tools.SolutionUpdater
         }
 
         /// <summary>
+        /// Löst alle Referenzen iterativ auf.
+        /// </summary>
+        /// <param name="projectLookup">Die Liste aller bekannten Projekte.</param>
+        public void DeepResolve( Dictionary<Guid, ProjectSection> projectLookup )
+        {
+            // Attach to existing dependencies
+            var dependencySection = m_sections.OfType<ProjectDependenciesSection>().SingleOrDefault();
+
+            // Process
+            dependencySection.UpdateDependencies( GetDeepDependencies( projectLookup ) );
+        }
+
+        /// <summary>
+        /// Meldet alle Abhängigkeiten.
+        /// </summary>
+        /// <param name="projectLookup">Die Liste aller Projekte.</param>
+        /// <returns>Die gewünschte vollständige Liste.</returns>
+        public IEnumerable<Guid> GetDeepDependencies( Dictionary<Guid, ProjectSection> projectLookup )
+        {
+            // Forward
+            return ProjectFile.DeepResolve( projectLookup );
+        }
+
+        /// <summary>
         /// Löst alle Referenzen auf.
         /// </summary>
         /// <param name="projects">Alle bekannten Projekte.</param>
@@ -176,9 +200,6 @@ namespace JMS.Tools.SolutionUpdater
                         Console.WriteLine( "\t-{0}: {1}", ProjectFile.FilePath.FullName, (project == null) ? oldDependency : (object) project.ProjectName );
                     }
             }
-
-            // Process
-            dependencySection.UpdateDependencies( ProjectFile.Dependencies );
         }
     }
 }

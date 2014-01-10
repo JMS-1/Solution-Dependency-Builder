@@ -44,6 +44,11 @@ namespace JMS.Tools.SolutionUpdater
         public HashSet<Guid> Dependencies { get; private set; }
 
         /// <summary>
+        /// Die Liste aller Abhängigkeiten, iterativ aufgelöst.
+        /// </summary>
+        public HashSet<Guid> DeepDependencies { get; private set; }
+
+        /// <summary>
         /// Initialisiert eine Verwaltung.
         /// </summary>
         /// <param name="path">Der volle Pfad zur Projektdatei.</param>
@@ -115,6 +120,34 @@ namespace JMS.Tools.SolutionUpdater
                 if (projects.TryGetValue( reference, out project ))
                     Dependencies.Add( project.UniqueIdentifier );
             }
+        }
+
+        /// <summary>
+        /// Löst alle Referenzen in die Tiefe auf.
+        /// </summary>
+        /// <param name="projectLookup">Die Liste aller Projekte.</param>
+        /// <returns>Die iterativ aufgelöste Liste der Abhängigkeiten.</returns>
+        public IEnumerable<Guid> DeepResolve( Dictionary<Guid, ProjectSection> projectLookup )
+        {
+            // Create once
+            if (DeepDependencies == null)
+            {
+                // Initial direct
+                DeepDependencies = new HashSet<Guid>( Dependencies );
+
+                // Resolve all
+                foreach (var projectIdentifier in Dependencies)
+                {
+                    // Do the resolve
+                    var dependencies = projectLookup[projectIdentifier].GetDeepDependencies( projectLookup );
+
+                    // Merge with us
+                    DeepDependencies.UnionWith( dependencies );
+                }
+            }
+
+            // Report
+            return DeepDependencies;
         }
     }
 }

@@ -78,6 +78,8 @@ namespace JMS.Tools.SolutionUpdater
             // Resolve references
             foreach (var project in projectsByTarget.Values)
                 project.Resolve( projectsByTarget, projectsByIdentifier );
+            foreach (var project in projectsByTarget.Values)
+                project.DeepResolve( projectsByIdentifier );
         }
 
         /// <summary>
